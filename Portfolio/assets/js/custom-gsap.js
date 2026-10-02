@@ -118,13 +118,17 @@
 
   function scrollToPageTop(isSmooth) {
     if (smoother) {
-      smoother.scrollTo(0, isSmooth !== false);
-    } else {
-      if (isSmooth !== false) {
-        $("html, body").stop().animate({ scrollTop: 0 }, 500);
-      } else {
-        window.scrollTo(0, 0);
+      try {
+        smoother.scrollTo(0, isSmooth !== false);
+      } catch (err) {
+        console.warn("ScrollSmoother error:", err);
       }
+    }
+    if (isSmooth !== false) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      $("html, body").stop().animate({ scrollTop: 0 }, 500);
+    } else {
+      window.scrollTo(0, 0);
     }
   }
 
@@ -195,14 +199,31 @@
 
       if (destinationSection) {
         if (destinationSection === "TOP") {
-          const currentNorm = (window.location.pathname || "/").replace(/\/$/, "") || "/";
-          if (currentNorm !== "/" && currentNorm !== "/index.html") {
-            window.location.href = "/";
+          event.preventDefault();
+          const isMainPage = Boolean(
+            document.querySelector(".banner-three-area") ||
+            document.getElementById("about") ||
+            document.getElementById("work")
+          );
+
+          if (isMainPage) {
+            isAutoScrolling = true;
+            scrollToPageTop(true);
+            if (window.history && window.history.pushState) {
+              if (window.location.pathname !== "/") {
+                window.history.pushState({ path: "/" }, "", "/");
+              }
+            }
+            updateActiveNav("/");
+            setTimeout(() => {
+              isAutoScrolling = false;
+            }, 900);
+            return;
+          } else {
+            // On a separate case study page, scroll to top smoothly
+            scrollToPageTop(true);
             return;
           }
-          event.preventDefault();
-          isAutoScrolling = true;
-          scrollToPageTop(true);
         } else {
           const $target = $(destinationSection);
           if ($target.length) {

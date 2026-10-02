@@ -1,0 +1,20 @@
+{
+  "name": "murtaza-portfolio",
+  "version": "1.0.0",
+  "description": "Murtaza Baig — AI Automation Developer Portfolio",
+  "scripts": {
+    "start": "python3 server.py 3000",
+    "dev": "python3 server.py 3000",
+    "serve:py": "python3 server.py 3000",
+    "serve:std": "python3 -m http.server 3000 --directory Portfolio"
+  },
+  "keywords": [
+    "portfolio",
+    "ai-automation",
+    "langgraph",
+    "paperclip",
+    "playwright"
+  ],
+  "author": "Murtaza Baig",
+  "license": "MIT"
+}

@@ -171,9 +171,10 @@
       }
     });
 
-    btn.on("click", function (e) {
+    $(document).on("click", "#back_to_top, .footer-three-back-to-top", function (e) {
       e.preventDefault();
-      $("html, body").animate({ scrollTop: 0 }, 300);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      $("html, body").stop().animate({ scrollTop: 0 }, 500);
     });
   }
   back_to_top();
@@ -299,5 +300,211 @@
     }
 
     initRipples();
+  });
+
+  ////////////////////////////////////////////////////
+  // 15. Ajax Contact Form Submission Handler
+  $(document).ready(function () {
+    var $forms = $(
+      "form.contact-form, form#main-contact-form, #contact-form form, .footer-three-form form"
+    );
+
+    if (!$forms.length) return;
+
+    $forms.each(function () {
+      var $form = $(this);
+
+      $form.on("submit", function (e) {
+        e.preventDefault();
+
+        var $submitBtn = $form.find('button[type="submit"]');
+        var $spinner = $submitBtn.find(".btn-spinner");
+        var $btnText = $submitBtn.find(".btn-text");
+        var originalBtnText = $btnText.length
+          ? $btnText.text()
+          : $submitBtn.text();
+
+        // Status alert container
+        var $statusAlert = $form.find(".form-status-alert");
+        if (!$statusAlert.length) {
+          $statusAlert = $('<div class="form-status-alert"></div>');
+          $form.prepend($statusAlert);
+        }
+
+        $statusAlert
+          .removeClass("alert-success alert-danger alert-info")
+          .hide()
+          .empty();
+
+        // Extract input values
+        var name = ($form.find('input[name="name"]').val() || "").trim();
+        var email = ($form.find('input[name="email"]').val() || "").trim();
+        var subject = (
+          $form.find('input[name="subject"]').val() || "Portfolio Inquiry"
+        ).trim();
+        var message = (
+          $form.find('textarea[name="message"]').val() || ""
+        ).trim();
+        var honey = ($form.find('input[name="_honey"]').val() || "").trim();
+
+        // Bot honeypot check
+        if (honey) {
+          console.warn("Spam detected via honeypot.");
+          return false;
+        }
+
+        // Basic client validation
+        if (!name || !email || !message) {
+          $statusAlert
+            .addClass("alert-danger")
+            .html("<strong>Please fill in all required fields.</strong>")
+            .fadeIn(200);
+          return false;
+        }
+
+        // Email regex validation
+        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email)) {
+          $statusAlert
+            .addClass("alert-danger")
+            .html("<strong>Please enter a valid email address.</strong>")
+            .fadeIn(200);
+          return false;
+        }
+
+        // Update UI to loading state
+        $submitBtn.prop("disabled", true).addClass("loading");
+        if ($spinner.length) {
+          $spinner.removeClass("d-none");
+        }
+        if ($btnText.length) {
+          $btnText.text("SENDING MESSAGE...");
+        } else {
+          $submitBtn.text("SENDING MESSAGE...");
+        }
+
+        // WhatsApp direct link for convenience
+        var waUrl =
+          "https://api.whatsapp.com/send?phone=923244416852&text=" +
+          encodeURIComponent(
+            "Hi Murtaza, I just submitted an inquiry on your portfolio (" +
+              subject +
+              "). My email is " +
+              email +
+              "."
+          );
+        var mailtoUrl =
+          "mailto:murtazabaig4266@gmail.com?subject=" +
+          encodeURIComponent("Inquiry: " + subject) +
+          "&body=" +
+          encodeURIComponent(
+            "Name: " +
+              name +
+              "\nEmail: " +
+              email +
+              "\n\nMessage:\n" +
+              message
+          );
+
+        // Submit via AJAX to FormSubmit
+        fetch("https://formsubmit.co/ajax/murtazabaig4266@gmail.com", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            email: email,
+            subject: subject,
+            message: message,
+            _subject: "New Portfolio Inquiry from " + name + " (" + subject + ")",
+          }),
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            $submitBtn.prop("disabled", false).removeClass("loading");
+            if ($spinner.length) $spinner.addClass("d-none");
+            if ($btnText.length) $btnText.text(originalBtnText);
+            else $submitBtn.text(originalBtnText);
+
+            // Check if FormSubmit returned an error or activation notice
+            var isSuccess = data && (data.success === "true" || data.success === true || (data.message && data.message.indexOf("Activation") !== -1));
+
+            if (isSuccess) {
+              $statusAlert
+                .removeClass("alert-danger alert-info")
+                .addClass("alert-success")
+                .html(
+                  '<div class="d-flex align-items-start gap-3">' +
+                    '<i class="ph-bold ph-check-circle" style="font-size: 1.5rem; color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>' +
+                    "<div>" +
+                    '<strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">Thank you, ' +
+                    $("<div>").text(name).html() +
+                    "!</strong>" +
+                    "<span>Your message has been sent successfully. Murtaza will respond to you within 24 hours.</span>" +
+                    '<div class="tw-mt-2" style="font-size: 0.88rem;">' +
+                    'Need an instant response? <a href="' +
+                    waUrl +
+                    '" target="_blank" rel="noopener noreferrer" style="color: #22c55e; font-weight: 600; text-decoration: underline;">Chat on WhatsApp <i class="ph ph-whatsapp-logo"></i></a>' +
+                    "</div>" +
+                    "</div>" +
+                    "</div>"
+                )
+                .fadeIn(300);
+
+              // Reset form fields
+              $form[0].reset();
+            } else {
+              // Service returned an unexpected status
+              $statusAlert
+                .removeClass("alert-success alert-info")
+                .addClass("alert-danger")
+                .html(
+                  '<div class="d-flex align-items-start gap-3">' +
+                    '<i class="ph-bold ph-warning-circle" style="font-size: 1.5rem; color: #ef4444; flex-shrink: 0; margin-top: 2px;"></i>' +
+                    "<div>" +
+                    '<strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">Submission Notice</strong>' +
+                    "<span>" + (data.message || "Could not complete submission automatically.") + "</span>" +
+                    '<div class="d-flex flex-wrap gap-2 tw-mt-3">' +
+                    '<a href="' + mailtoUrl + '" class="tw-py-2 tw-px-3 rounded bg-white text-dark fw-bold tw-text-xs text-uppercase" style="text-decoration:none;"><i class="ph ph-envelope-simple tw-me-1"></i> Send via Email</a>' +
+                    '<a href="' + waUrl + '" target="_blank" rel="noopener noreferrer" class="tw-py-2 tw-px-3 rounded bg-success text-white fw-bold tw-text-xs text-uppercase" style="text-decoration:none;"><i class="ph ph-whatsapp-logo tw-me-1"></i> Chat on WhatsApp</a>' +
+                    "</div>" +
+                    "</div>" +
+                    "</div>"
+                )
+                .fadeIn(300);
+            }
+          })
+          .catch(function (error) {
+            console.error("Contact Form Submission Error:", error);
+            $submitBtn.prop("disabled", false).removeClass("loading");
+            if ($spinner.length) $spinner.addClass("d-none");
+            if ($btnText.length) $btnText.text(originalBtnText);
+            else $submitBtn.text(originalBtnText);
+
+            // Network failure fallback
+            $statusAlert
+              .removeClass("alert-success alert-info")
+              .addClass("alert-danger")
+              .html(
+                '<div class="d-flex align-items-start gap-3">' +
+                  '<i class="ph-bold ph-warning-circle" style="font-size: 1.5rem; color: #ef4444; flex-shrink: 0; margin-top: 2px;"></i>' +
+                  "<div>" +
+                  '<strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">Network Error</strong>' +
+                  "<span>Could not send form directly. Reach Murtaza directly via:</span>" +
+                  '<div class="d-flex flex-wrap gap-2 tw-mt-3">' +
+                  '<a href="' + mailtoUrl + '" class="tw-py-2 tw-px-3 rounded bg-white text-dark fw-bold tw-text-xs text-uppercase" style="text-decoration:none;"><i class="ph ph-envelope-simple tw-me-1"></i> Send via Email</a>' +
+                  '<a href="' + waUrl + '" target="_blank" rel="noopener noreferrer" class="tw-py-2 tw-px-3 rounded bg-success text-white fw-bold tw-text-xs text-uppercase" style="text-decoration:none;"><i class="ph ph-whatsapp-logo tw-me-1"></i> Chat on WhatsApp</a>' +
+                  "</div>" +
+                  "</div>" +
+                  "</div>"
+              )
+              .fadeIn(300);
+          });
+      });
+    });
   });
 })(jQuery);
