@@ -29,6 +29,13 @@
   ////////////////////////////////////////////////////
   // 01. PreLoader Js
   document.addEventListener("DOMContentLoaded", () => {
+    // Failsafe: never leave the visitor stuck on the loader
+    const hidePreloader = () => {
+      const el = document.querySelector(".preloader");
+      if (el) { el.style.display = "none"; el.style.zIndex = "-1"; }
+    };
+    if (typeof gsap === "undefined") { hidePreloader(); return; }
+    setTimeout(hidePreloader, 6000);
     // Create GSAP timeline
     const tl = gsap.timeline();
     const svg = document.getElementById("preloaderSvg");

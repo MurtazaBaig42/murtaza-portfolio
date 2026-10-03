@@ -20,6 +20,20 @@
 (function ($) {
   "use strict";
 
+  // Only rewrite the address bar (clean URLs like /about) when the site is served
+  // from the domain root. On subpath deployments (GitHub Pages /repo/, Vercel root
+  // repo -> /Portfolio/) rewriting to "/" changes the base URL while scripts are
+  // still loading, so main.js (the preloader) 404s and the loader never ends.
+  const CAN_REWRITE_URL = (function () {
+    try {
+      const el = document.currentScript;
+      const path = el ? new URL(el.src, document.baseURI).pathname : "";
+      return path.indexOf("/assets/js/") === 0;
+    } catch (e) {
+      return false;
+    }
+  })();
+
   ////////////////////////////////////////////////////
   // 01. Smooth Scroll Js
   let smoother = null;
@@ -141,7 +155,7 @@
       initialPath = sectionRouteMap[initialHash];
     }
 
-    if (window.history && window.history.replaceState) {
+    if (CAN_REWRITE_URL && window.history && window.history.replaceState) {
       window.history.replaceState({ path: initialPath }, "", initialPath);
     }
 
@@ -209,7 +223,7 @@
           if (isMainPage) {
             isAutoScrolling = true;
             scrollToPageTop(true);
-            if (window.history && window.history.pushState) {
+            if (CAN_REWRITE_URL && window.history && window.history.pushState) {
               if (window.location.pathname !== "/") {
                 window.history.pushState({ path: "/" }, "", "/");
               }
@@ -243,7 +257,7 @@
           }
         }
 
-        if (window.history && window.history.pushState) {
+        if (CAN_REWRITE_URL && window.history && window.history.pushState) {
           if (window.location.pathname !== cleanUrl) {
             window.history.pushState({ path: cleanUrl }, "", cleanUrl);
           }
@@ -315,7 +329,7 @@
       if (isAutoScrolling) return;
       const current = getCleanPath();
       if (current !== path) {
-        if (window.history && window.history.replaceState) {
+        if (CAN_REWRITE_URL && window.history && window.history.replaceState) {
           window.history.replaceState({ path: path }, "", path);
         }
       }
